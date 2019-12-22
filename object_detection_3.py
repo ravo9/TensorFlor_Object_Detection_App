@@ -25,7 +25,7 @@ tf.gfile = tf.io.gfile
 # List of the strings that is used to add correct label for each box.
 PATH_TO_LABELS = 'data/mscoco_label_map.pbtxt'
 category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
-model_name = 'ssd_mobilenet_v1_coco_2017_11_17'
+
 
 def load_model(model_name):
     base_url = 'http://download.tensorflow.org/models/object_detection/'
@@ -44,6 +44,9 @@ def load_model(model_name):
 
 def run_inference_for_single_image(model, image):
     image = np.asarray(image)
+
+    print("image object:   {}".format(image.shape))
+
     # The input needs to be a tensor, convert it using `tf.convert_to_tensor`.
     input_tensor = tf.convert_to_tensor(image)
     # The model expects a batch of images, so add an axis with `tf.newaxis`.
@@ -75,6 +78,7 @@ def run_inference_for_single_image(model, image):
     return output_dict
 
 def prepareVisualization(model, image_np):
+
     # Actual detection.
     output_dict = run_inference_for_single_image(model, image_np)
     # Visualization of the results of a detection.
@@ -87,7 +91,9 @@ def prepareVisualization(model, image_np):
         instance_masks=output_dict.get('detection_masks_reframed', None),
         use_normalized_coordinates=True,
         line_thickness=8)
+    cv2.imshow('object_detection', cv2.resize(image_np, (800, 600)))
 
+model_name = 'ssd_mobilenet_v1_coco_2017_11_17'
 detection_model = load_model(model_name)
 detection_model.output_dtypes
 detection_model.output_shapes
@@ -95,10 +101,15 @@ detection_model.output_shapes
 # 1. Load the image.
 image = cv2.imread('./scarlett.jpg')
 
-# 2. Analyze image.
+cap = cv2.VideoCapture(0)
+ret, image = cap.read()
+
 analyzedImage = run_inference_for_single_image(detection_model, image)
 
-prepareVisualization(detection_model, analyzedImage)
+# 2. Analyze image.
+#analyzedImage = prepareVisualization(detection_model, image_np)
+
+#prepareVisualization(detection_model, analyzedImage)
 
 # 3. Display result.
 #image = cv2.resize(image, (800, 600))
