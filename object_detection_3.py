@@ -8,6 +8,7 @@ import tarfile
 import tensorflow as tf
 import zipfile
 import cv2
+import urllib.request
 
 from collections import defaultdict
 from io import StringIO
@@ -36,9 +37,20 @@ model_name = 'ssd_mobilenet_v1_coco_2017_11_17'
 app = Flask(__name__)
 api = Api(app)
 
-class Test(Resource):
-    def get(self):
-        return("TestTestTest")
+@app.route('/analyze', methods=['POST'])
+def api_root():
+    picture = request.form['picture']
+    print(picture)
+
+    # Save the result.
+    if (picture != None):
+        filename = 'receivedImage.jpg'
+        picture = picture.strip('\'"')
+        urllib.request.urlretrieve(picture, "local-filename.jpg")
+        #picture = np.asarray(picture)
+        #cv2.imwrite(filename, picture)
+
+    return "POST OK"
 
 def load_model(model_name):
     base_url = 'http://download.tensorflow.org/models/object_detection/'
@@ -100,10 +112,10 @@ def prepareVisualization(model, output_dict, image_np):
         use_normalized_coordinates=True,
         line_thickness=8)
 
-    cv2.imshow('object_detection', cv2.resize(image_np, (800, 600)))
-    if cv2.waitKey(1000) & 0xFF == ord('q'):
-        cap.release()
-        cv2.destroyAllWindows()
+    #cv2.imshow('object_detection', cv2.resize(image_np, (800, 600)))
+    #if cv2.waitKey(1000) & 0xFF == ord('q'):
+        #cap.release()
+        #cv2.destroyAllWindows()
 
     # Save the result.
     filename = 'savedResult.jpg'
@@ -125,7 +137,5 @@ prepareVisualization(detection_model, analysisResult, originalImage)
 #cv2.imshow("OpenCV Image Reading", image)
 #cv2.waitKey(0)
 
-api.add_resource(Test, '/test')
-
 if __name__ == '__main__':
-     app.run(port='5002')
+     app.run(port='2137')
