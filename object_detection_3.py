@@ -19,13 +19,26 @@ from object_detection.utils import ops as utils_ops
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 
+from flask import Flask, request
+from flask_restful import Resource, Api
+from sqlalchemy import create_engine
+from json import dumps
+from flask_jsonpify import jsonify
+
 # Patch the location of gfile
 tf.gfile = tf.io.gfile
 
 # List of the strings that is used to add correct label for each box.
 PATH_TO_LABELS = 'data/mscoco_label_map.pbtxt'
 category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
+model_name = 'ssd_mobilenet_v1_coco_2017_11_17'
 
+app = Flask(__name__)
+api = Api(app)
+
+class Test(Resource):
+    def get(self):
+        return("TestTestTest")
 
 def load_model(model_name):
     base_url = 'http://download.tensorflow.org/models/object_detection/'
@@ -44,9 +57,6 @@ def load_model(model_name):
 
 def run_inference_for_single_image(model, image):
     image = np.asarray(image)
-
-    print("image object:   {}".format(image.shape))
-
     # The input needs to be a tensor, convert it using `tf.convert_to_tensor`.
     input_tensor = tf.convert_to_tensor(image)
     # The model expects a batch of images, so add an axis with `tf.newaxis`.
@@ -77,10 +87,8 @@ def run_inference_for_single_image(model, image):
 
     return output_dict
 
-def prepareVisualization(model, image_np):
+def prepareVisualization(model, output_dict, image_np):
 
-    # Actual detection.
-    output_dict = run_inference_for_single_image(model, image_np)
     # Visualization of the results of a detection.
     vis_util.visualize_boxes_and_labels_on_image_array(
         image_np,
@@ -91,27 +99,33 @@ def prepareVisualization(model, image_np):
         instance_masks=output_dict.get('detection_masks_reframed', None),
         use_normalized_coordinates=True,
         line_thickness=8)
-    cv2.imshow('object_detection', cv2.resize(image_np, (800, 600)))
 
-model_name = 'ssd_mobilenet_v1_coco_2017_11_17'
+    cv2.imshow('object_detection', cv2.resize(image_np, (800, 600)))
+    if cv2.waitKey(1000) & 0xFF == ord('q'):
+        cap.release()
+        cv2.destroyAllWindows()
+
+    # Save the result.
+    filename = 'savedResult.jpg'
+    cv2.imwrite(filename, image_np)
+
 detection_model = load_model(model_name)
 detection_model.output_dtypes
 detection_model.output_shapes
 
 # 1. Load the image.
-image = cv2.imread('./scarlett.jpg')
-
-cap = cv2.VideoCapture(0)
-ret, image = cap.read()
-
-analyzedImage = run_inference_for_single_image(detection_model, image)
+originalImage = cv2.imread('./image.jpg')
 
 # 2. Analyze image.
-#analyzedImage = prepareVisualization(detection_model, image_np)
-
-#prepareVisualization(detection_model, analyzedImage)
+analysisResult = run_inference_for_single_image(detection_model, originalImage)
 
 # 3. Display result.
+prepareVisualization(detection_model, analysisResult, originalImage)
 #image = cv2.resize(image, (800, 600))
 #cv2.imshow("OpenCV Image Reading", image)
-cv2.waitKey(0)
+#cv2.waitKey(0)
+
+api.add_resource(Test, '/test')
+
+if __name__ == '__main__':
+     app.run(port='5002')
